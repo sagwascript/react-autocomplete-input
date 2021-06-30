@@ -230,8 +230,8 @@ class AutocompleteTextField extends React.Component {
             const suggestIndex = spaceCharIndex >= 0 ? spaceCharIndex : 0;
             const variableNameRaw = str.slice(suggestIndex, matchStart);
             const mappedVariableProp = variableNameRaw
-              .split(triggerStr) // TODO: Change this to be dynamic
-              .map((v) => v.trim())
+              .split(triggerStr)
+              .map((v) => v.trim().replaceAll("'", ''))
               .filter((v) => v.length);
             let k = 1;
             let currentObj = triggerOptions[mappedVariableProp[0]];
@@ -245,7 +245,7 @@ class AutocompleteTextField extends React.Component {
               k += 1;
             }
 
-            options = Object.keys(currentObj).filter((slug) => {
+            options = Object.keys(currentObj || []).filter((slug) => {
               const idx = slug.toLowerCase().indexOf(matchedSlug.toLowerCase());
               return idx !== -1 && (matchAny || idx === 0);
             });
