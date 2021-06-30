@@ -1,8 +1,8 @@
-import React, { createRef } from 'react';
-import PropTypes from 'prop-types';
-import getCaretCoordinates from 'textarea-caret';
-import getInputSelection, { setCaretPosition } from 'get-input-selection';
-import './AutoCompleteTextField.css';
+import React, { createRef } from "react";
+import PropTypes from "prop-types";
+import getCaretCoordinates from "textarea-caret";
+import getInputSelection, { setCaretPosition } from "get-input-selection";
+import "./AutoCompleteTextField.css";
 
 const KEY_UP = 38;
 const KEY_DOWN = 40;
@@ -15,10 +15,7 @@ const OPTION_LIST_Y_OFFSET = 10;
 const OPTION_LIST_MIN_WIDTH = 100;
 
 const propTypes = {
-  Component: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.elementType,
-  ]),
+  Component: PropTypes.oneOfType([PropTypes.string, PropTypes.elementType]),
   defaultValue: PropTypes.string,
   disabled: PropTypes.bool,
   maxOptions: PropTypes.number,
@@ -30,27 +27,29 @@ const propTypes = {
   changeOnSelect: PropTypes.func,
   options: PropTypes.oneOfType([
     PropTypes.object,
-    PropTypes.arrayOf(PropTypes.string),
+    PropTypes.arrayOf(PropTypes.string)
   ]),
   regex: PropTypes.string,
   matchAny: PropTypes.bool,
   minChars: PropTypes.number,
+  disableMinChars: PropTypes.arrayOf(PropTypes.string),
   requestOnlyIfNoOptions: PropTypes.bool,
   spaceRemovers: PropTypes.arrayOf(PropTypes.string),
   spacer: PropTypes.string,
   trigger: PropTypes.oneOfType([
     PropTypes.string,
-    PropTypes.arrayOf(PropTypes.string),
+    PropTypes.arrayOf(PropTypes.string)
   ]),
+  disableSpacerOn: PropTypes.arrayOf(PropTypes.string),
   value: PropTypes.string,
   offsetX: PropTypes.number,
   offsetY: PropTypes.number,
-  passThroughEnter: PropTypes.bool,
+  passThroughEnter: PropTypes.bool
 };
 
 const defaultProps = {
-  Component: 'textarea',
-  defaultValue: '',
+  Component: "textarea",
+  defaultValue: "",
   disabled: false,
   maxOptions: 6,
   onBlur: () => {},
@@ -60,17 +59,19 @@ const defaultProps = {
   onSelect: () => {},
   changeOnSelect: (trigger, slug) => trigger + slug,
   options: [],
-  regex: '^[A-Za-z0-9\\-_]+$',
+  regex: "^[A-Za-z0-9\\-_]+$",
   matchAny: false,
   minChars: 0,
+  disableMinChars: [],
   requestOnlyIfNoOptions: true,
-  spaceRemovers: [',', '.', '!', '?'],
-  spacer: ' ',
-  trigger: '@',
+  spaceRemovers: [",", ".", "!", "?"],
+  spacer: " ",
+  disableSpacerOn: [],
+  trigger: "@",
   offsetX: 0,
   offsetY: 0,
   value: null,
-  passThroughEnter: false,
+  passThroughEnter: false
 };
 
 class AutocompleteTextField extends React.Component {
@@ -98,7 +99,7 @@ class AutocompleteTextField extends React.Component {
       options: [],
       selection: 0,
       top: 0,
-      value: null,
+      value: null
     };
 
     this.recentValue = props.defaultValue;
@@ -107,7 +108,7 @@ class AutocompleteTextField extends React.Component {
   }
 
   componentDidMount() {
-    window.addEventListener('resize', this.handleResize);
+    window.addEventListener("resize", this.handleResize);
   }
 
   componentDidUpdate(prevProps) {
@@ -120,88 +121,163 @@ class AutocompleteTextField extends React.Component {
   }
 
   componentWillUnmount() {
-    window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener("resize", this.handleResize);
   }
 
   getMatch(str, caret, providedOptions) {
-    const { trigger, matchAny, regex } = this.props;
+    // get trigger, matchAny and regex from props
+    const { trigger, minChars, matchAny, regex } = this.props;
+    // instantiate regexp with params passed from props
     const re = new RegExp(regex);
 
+    // rename trigger variable into triggers
     let triggers = trigger;
+    // if trigger is not an array, because trigger can be a `string`
     if (!Array.isArray(triggers)) {
+      // change it into an array
       triggers = new Array(trigger);
     }
+    // sort triggers array
     triggers.sort();
 
+    // create variable to store options object from props
     const providedOptionsObject = providedOptions;
+    // if options is an array then
     if (Array.isArray(providedOptions)) {
+      // store every options on every trigger
       triggers.forEach((triggerStr) => {
         providedOptionsObject[triggerStr] = providedOptions;
       });
     }
 
+    // get an array of configured trigger object
     const triggersMatch = this.arrayTriggerMatch(triggers, re);
     let slugData = null;
 
-    for (let triggersIndex = 0; triggersIndex < triggersMatch.length; triggersIndex++) {
-      const { triggerStr, triggerMatch, triggerLength } = triggersMatch[triggersIndex];
+    // loop through triggersMatch array
+    for (
+      let triggersIndex = 0;
+      triggersIndex < triggersMatch.length;
+      triggersIndex++
+    ) {
+      // get all data from current triggersMatch object
+      const { triggerStr, triggerMatch, triggerLength } = triggersMatch[
+        triggersIndex
+      ];
 
+      // loop from caret position index until 0
       for (let i = caret - 1; i >= 0; --i) {
+        // get partial string from current index i until caret position
         const substr = str.substring(i, caret);
+        // match partial string with specified regexp
         const match = substr.match(re);
+        // create variable matchStart and assign with -1
         let matchStart = -1;
 
+        // if trigger's character is not an empty string
+        // THE PROCESS OF GETTING MATCHED OPTIONS WITH CURRENTLY TYPED STRING
+        // AND ITS TRIGGER
         if (triggerLength > 0) {
+          // create variable `triggerIdx` and assign it with value of `i`
+          // or calculation result of current value of `i` minus value of `triggerLength` plus 1
           const triggerIdx = triggerMatch ? i : i - triggerLength + 1;
 
-          if (triggerIdx < 0) { // out of input
+          // if triggerIdx is less than 0 then exit the loop
+          if (triggerIdx < 0) {
+            // out of input
             break;
           }
 
+          // if current str contains trigger char then
           if (this.isTrigger(triggerStr, str, triggerIdx)) {
+            // change value of matchStart with value of `triggerIdx` plus `triggerLength`
             matchStart = triggerIdx + triggerLength;
           }
 
+          // if regexp is not match and matchStart is less than 0
           if (!match && matchStart < 0) {
+            // then exit loop
             break;
           }
         } else {
-          if (match && i > 0) { // find first non-matching character or begin of input
-            continue;
-          }
-          matchStart = i === 0 && match ? 0 : i + 1;
-
-          if (caret - matchStart === 0) { // matched slug is empty
+          // block to handle trigger with empty string
+          const spaceCharIndex = str.lastIndexOf(" ", caret);
+          matchStart = spaceCharIndex >= 0 ? spaceCharIndex + 1 : 0;
+          if (caret - matchStart <= minChars - 1) {
+            // matched slug is empty
             break;
           }
         }
 
+        // if match index is bigger or equal to 0
         if (matchStart >= 0) {
+          // get options of current triggerStr
           const triggerOptions = providedOptionsObject[triggerStr];
+          // if options is null then skip loop
           if (triggerOptions == null) {
             continue;
           }
 
           const matchedSlug = str.substring(matchStart, caret);
 
-          const options = triggerOptions.filter((slug) => {
-            const idx = slug.toLowerCase().indexOf(matchedSlug.toLowerCase());
-            return idx !== -1 && (matchAny || idx === 0);
-          });
+          // filter available options so it only display options that contain
+          // matched slug of trigger
+          let options = [];
+          if (!Array.isArray(triggerOptions)) {
+            const spaceCharIndex = str.lastIndexOf(" ", matchStart);
+            const suggestIndex = spaceCharIndex >= 0 ? spaceCharIndex : 0;
+            const variableNameRaw = str.slice(suggestIndex, matchStart);
+            const mappedVariableProp = variableNameRaw
+              .split(triggerStr) // TODO: Change this to be dynamic
+              .map((v) => v.trim())
+              .filter((v) => v.length);
+            let k = 1;
+            let currentObj = triggerOptions[mappedVariableProp[0]];
+            while (k < mappedVariableProp.length) {
+              if (currentObj[mappedVariableProp[k]]) {
+                currentObj = currentObj[mappedVariableProp[k]];
+              } else {
+                currentObj = {};
+                break;
+              }
+              k++;
+            }
+
+            options = Object.keys(currentObj).filter((slug) => {
+              const idx = slug.toLowerCase().indexOf(matchedSlug.toLowerCase());
+              return idx !== -1 && (matchAny || idx === 0);
+            });
+          } else {
+            options = triggerOptions.filter((slug) => {
+              const idx = slug.toLowerCase().indexOf(matchedSlug.toLowerCase());
+              return idx !== -1 && (matchAny || idx === 0);
+            });
+          }
 
           const currTrigger = triggerStr;
           const matchLength = matchedSlug.length;
 
+          // store data in `slugData` object
           if (slugData === null) {
             slugData = {
-              trigger: currTrigger, matchStart, matchLength, options,
+              trigger: currTrigger,
+              matchStart,
+              matchLength,
+              options
             };
-          }
-          else {
+          } else {
             slugData = {
-              ...slugData, trigger: currTrigger, matchStart, matchLength, options,
+              ...slugData,
+              trigger: currTrigger,
+              matchStart,
+              matchLength,
+              options
             };
           }
+          // exit loop if trigger is an empty string,
+          // no need to iterate through textarea value char
+          // since `matchStart` is calculated using the index of ' ' space character
+          if (triggerLength === 0) break;
         }
       }
     }
@@ -210,20 +286,26 @@ class AutocompleteTextField extends React.Component {
   }
 
   arrayTriggerMatch(triggers, re) {
+    // map triggers item and then store on every trigger an object
     const triggersMatch = triggers.map((trigger) => ({
-      triggerStr: trigger,
-      triggerMatch: trigger.match(re),
-      triggerLength: trigger.length,
+      triggerStr: trigger, // string to type to trigger the options
+      triggerMatch: trigger.match(re), // regexp to match this trigger
+      triggerLength: trigger.length // number of char of this trigger
     }));
 
+    // return array of trigger object
     return triggersMatch;
   }
 
   isTrigger(trigger, str, i) {
+    // console.log(`is Trigger, trigger: ${trigger}, str: ${str}, i: ${i}`);
+    // if trigger string is not empty or trigger string has length that's not 0
+    // then return true
     if (!trigger || !trigger.length) {
       return true;
     }
 
+    // if current string contains trigger char then return true
     if (str.substr(i, trigger.length) === trigger) {
       return true;
     }
@@ -232,62 +314,87 @@ class AutocompleteTextField extends React.Component {
   }
 
   handleChange(e) {
-    const {
-      onChange,
-      options,
-      spaceRemovers,
-      spacer,
-      value,
-    } = this.props;
+    const { onChange, options, spaceRemovers, spacer, value } = this.props;
 
+    // store recent value into variable `old`
     const old = this.recentValue;
+    // store current textarea value into variable `str`
     const str = e.target.value;
+    // get caret position inside textarea
     const caret = getInputSelection(e.target).end;
 
+    // if current textarea is empty then hide suggestion popover
     if (!str.length) {
       this.setState({ helperVisible: false });
     }
 
+    // set `recentValue` with current textarea value
     this.recentValue = str;
 
+    // change caret position and value on component state
     this.setState({ caret, value: e.target.value });
 
+    // if textarea is empty and caret position is not set then do nothing, and call onChange callback
     if (!str.length || !caret) {
       return onChange(e.target.value);
     }
 
+    // if enableSpaceRemovers prop is assigned then
     // '@wonderjenny ,|' -> '@wonderjenny, |'
-    if (this.enableSpaceRemovers && spaceRemovers.length && str.length > 2 && spacer.length) {
+    if (
+      this.enableSpaceRemovers &&
+      spaceRemovers.length &&
+      str.length > 2 &&
+      spacer.length
+    ) {
+      // loop every char from index 0 until maximum length of previous value and current value
+      // of textarea
       for (let i = 0; i < Math.max(old.length, str.length); ++i) {
+        // if character on current index is different on previouse value and current value
         if (old[i] !== str[i]) {
+          // if current index is greater than or equal 2 and
+          // current value
           if (
-            i >= 2
-            && str[i - 1] === spacer
-            && spaceRemovers.indexOf(str[i - 2]) === -1
-            && spaceRemovers.indexOf(str[i]) !== -1
-            && this.getMatch(str.substring(0, i - 2), caret - 3, options)
+            i >= 2 &&
+            str[i - 1] === spacer &&
+            spaceRemovers.indexOf(str[i - 2]) === -1 &&
+            spaceRemovers.indexOf(str[i]) !== -1 &&
+            this.getMatch(str.substring(0, i - 2), caret - 3, options)
           ) {
-            const newValue = (`${str.slice(0, i - 1)}${str.slice(i, i + 1)}${str.slice(i - 1, i)}${str.slice(i + 1)}`);
+            // recompose textarea value by removing `spaceRemovers` character
+            const newValue = `${str.slice(0, i - 1)}${str.slice(
+              i,
+              i + 1
+            )}${str.slice(i - 1, i)}${str.slice(i + 1)}`;
 
+            // update caret position on state and change caret position on textarea
             this.updateCaretPosition(i + 1);
+            // change textarea value using newValue
             this.refInput.current.value = newValue;
 
+            // if value is not empty then change value data on component's state
             if (!value) {
               this.setState({ value: newValue });
             }
 
+            // call onChange callback and pass newValue as argument
             return onChange(newValue);
           }
 
+          // exit loop
           break;
         }
       }
 
+      // NOTE: this line is confusing
       this.enableSpaceRemovers = false;
     }
 
+    // call update helper
     this.updateHelper(str, caret, options);
 
+    // NOTE: this line is confusing and seems useless
+    // if value is empty then update value data on component's state
     if (!value) {
       this.setState({ value: e.target.value });
     }
@@ -307,7 +414,9 @@ class AutocompleteTextField extends React.Component {
           break;
         case KEY_UP:
           event.preventDefault();
-          this.setState({ selection: ((options.length + selection) - 1) % options.length });
+          this.setState({
+            selection: (options.length + selection - 1) % options.length
+          });
           break;
         case KEY_DOWN:
           event.preventDefault();
@@ -315,7 +424,9 @@ class AutocompleteTextField extends React.Component {
           break;
         case KEY_ENTER:
         case KEY_RETURN:
-          if (!passThroughEnter) { event.preventDefault(); }
+          if (!passThroughEnter) {
+            event.preventDefault();
+          }
           this.handleSelection(selection);
           break;
         case KEY_TAB:
@@ -335,10 +446,8 @@ class AutocompleteTextField extends React.Component {
   }
 
   handleSelection(idx) {
-    const { spacer, onSelect, changeOnSelect } = this.props;
-    const {
-      matchStart, matchLength, options, trigger,
-    } = this.state;
+    const { spacer, onSelect, changeOnSelect, disableSpacerOn } = this.props;
+    const { matchStart, matchLength, options, trigger } = this.state;
 
     const slug = options[idx];
     const value = this.recentValue;
@@ -348,7 +457,8 @@ class AutocompleteTextField extends React.Component {
     const event = { target: this.refInput.current };
     const changedStr = changeOnSelect(trigger, slug);
 
-    event.target.value = `${part1}${changedStr}${spacer}${part2}`;
+    const spacerStr = disableSpacerOn.includes(trigger) ? "" : spacer;
+    event.target.value = `${part1}${changedStr}${spacerStr}${part2}`;
     this.handleChange(event);
     onSelect(event.target.value);
 
@@ -360,43 +470,52 @@ class AutocompleteTextField extends React.Component {
   }
 
   updateCaretPosition(caret) {
-    this.setState({ caret }, () => setCaretPosition(this.refInput.current, caret));
+    this.setState({ caret }, () =>
+      setCaretPosition(this.refInput.current, caret)
+    );
   }
 
   updateHelper(str, caret, options) {
+    // get textarea reference
     const input = this.refInput.current;
 
+    // get slug data on current caret position and textarea value
     const slug = this.getMatch(str, caret, options);
 
+    // if slug data is not empty
     if (slug) {
+      // get position of caret
       const caretPos = getCaretCoordinates(input, caret);
       const rect = input.getBoundingClientRect();
 
       const top = caretPos.top + input.offsetTop;
       const left = Math.min(
         caretPos.left + input.offsetLeft - OPTION_LIST_Y_OFFSET,
-        input.offsetLeft + rect.width - OPTION_LIST_MIN_WIDTH,
+        input.offsetLeft + rect.width - OPTION_LIST_MIN_WIDTH
       );
 
-      const { minChars, onRequestOptions, requestOnlyIfNoOptions } = this.props;
+      const {
+        minChars,
+        disableMinChars,
+        onRequestOptions,
+        requestOnlyIfNoOptions
+      } = this.props;
       if (
-        slug.matchLength >= minChars
-        && (
-          slug.options.length > 1
-          || (
-            slug.options.length === 1
-            && slug.options[0].length !== slug.matchLength
-          )
-        )
+        (slug.matchLength >= minChars ||
+          disableMinChars.includes(slug.trigger)) &&
+        (slug.options.length > 1 ||
+          (slug.options.length === 1 &&
+            slug.options[0].length !== slug.matchLength))
       ) {
         this.setState({
           helperVisible: true,
           top,
           left,
-          ...slug,
+          ...slug
         });
       } else {
         if (!requestOnlyIfNoOptions || !slug.options.length) {
+          // call onRequestOptions callback
           onRequestOptions(str.substr(slug.matchStart, slug.matchLength));
         }
 
@@ -420,7 +539,7 @@ class AutocompleteTextField extends React.Component {
       options,
       selection,
       top,
-      value,
+      value
     } = this.state;
 
     if (!helperVisible) {
@@ -428,6 +547,8 @@ class AutocompleteTextField extends React.Component {
     }
 
     const { maxOptions, offsetX, offsetY } = this.props;
+
+    let helperOptions;
 
     if (options.length === 0) {
       return null;
@@ -441,25 +562,41 @@ class AutocompleteTextField extends React.Component {
 
     const optionNumber = maxOptions === 0 ? options.length : maxOptions;
 
-    const helperOptions = options.slice(0, optionNumber).map((val, idx) => {
-      const highlightStart = val.toLowerCase().indexOf(value.substr(matchStart, matchLength).toLowerCase());
+    helperOptions = options.slice(0, optionNumber).map((val, idx) => {
+      const highlightStart = val
+        .toLowerCase()
+        .indexOf(value.substr(matchStart, matchLength).toLowerCase());
 
       return (
         <li
-          className={idx === selection ? 'active' : null}
+          className={idx === selection ? "active" : null}
           key={val}
-          onClick={() => { this.handleSelection(idx); }}
-          onMouseEnter={() => { this.setState({ selection: idx }); }}
+          onClick={() => {
+            this.handleSelection(idx);
+          }}
+          onMouseEnter={() => {
+            this.setState({ selection: idx });
+          }}
         >
           {val.slice(0, highlightStart)}
-          <strong>{val.substr(highlightStart, matchLength)}</strong>
+          <strong style={{ color: "red" }}>
+            {val.substr(highlightStart, matchLength)}
+          </strong>
           {val.slice(highlightStart + matchLength)}
         </li>
       );
     });
 
     return (
-      <ul className="react-autocomplete-input" style={{ left: left + offsetX, top: top + offsetY }}>
+      <ul
+        className="react-autocomplete-input"
+        style={{
+          left: left + offsetX,
+          top: top + offsetY,
+          overflowY: "auto",
+          maxHeight: 200
+        }}
+      >
         {helperOptions}
       </ul>
     );
@@ -478,11 +615,13 @@ class AutocompleteTextField extends React.Component {
     const { value: stateValue } = this.state;
 
     const propagated = Object.assign({}, rest);
-    Object.keys(propTypes).forEach((k) => { delete propagated[k]; });
+    Object.keys(propTypes).forEach((k) => {
+      delete propagated[k];
+    });
 
-    let val = '';
+    let val = "";
 
-    if (typeof value !== 'undefined' && value !== null) {
+    if (typeof value !== "undefined" && value !== null) {
       val = value;
     } else if (stateValue) {
       val = stateValue;
