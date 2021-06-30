@@ -1,8 +1,8 @@
-import React, { createRef } from "react";
-import PropTypes from "prop-types";
-import getCaretCoordinates from "textarea-caret";
-import getInputSelection, { setCaretPosition } from "get-input-selection";
-import "./AutoCompleteTextField.css";
+import React, { createRef } from 'react';
+import PropTypes from 'prop-types';
+import getCaretCoordinates from 'textarea-caret';
+import getInputSelection, { setCaretPosition } from 'get-input-selection';
+import './AutoCompleteTextField.css';
 
 const KEY_UP = 38;
 const KEY_DOWN = 40;
@@ -27,7 +27,7 @@ const propTypes = {
   changeOnSelect: PropTypes.func,
   options: PropTypes.oneOfType([
     PropTypes.object,
-    PropTypes.arrayOf(PropTypes.string)
+    PropTypes.arrayOf(PropTypes.string),
   ]),
   regex: PropTypes.string,
   matchAny: PropTypes.bool,
@@ -38,18 +38,18 @@ const propTypes = {
   spacer: PropTypes.string,
   trigger: PropTypes.oneOfType([
     PropTypes.string,
-    PropTypes.arrayOf(PropTypes.string)
+    PropTypes.arrayOf(PropTypes.string),
   ]),
   disableSpacerOn: PropTypes.arrayOf(PropTypes.string),
   value: PropTypes.string,
   offsetX: PropTypes.number,
   offsetY: PropTypes.number,
-  passThroughEnter: PropTypes.bool
+  passThroughEnter: PropTypes.bool,
 };
 
 const defaultProps = {
-  Component: "textarea",
-  defaultValue: "",
+  Component: 'textarea',
+  defaultValue: '',
   disabled: false,
   maxOptions: 6,
   onBlur: () => {},
@@ -59,19 +59,19 @@ const defaultProps = {
   onSelect: () => {},
   changeOnSelect: (trigger, slug) => trigger + slug,
   options: [],
-  regex: "^[A-Za-z0-9\\-_]+$",
+  regex: '^[A-Za-z0-9\\-_]+$',
   matchAny: false,
   minChars: 0,
   disableMinChars: [],
   requestOnlyIfNoOptions: true,
-  spaceRemovers: [",", ".", "!", "?"],
-  spacer: " ",
+  spaceRemovers: [',', '.', '!', '?'],
+  spacer: ' ',
   disableSpacerOn: [],
-  trigger: "@",
+  trigger: '@',
   offsetX: 0,
   offsetY: 0,
   value: null,
-  passThroughEnter: false
+  passThroughEnter: false,
 };
 
 class AutocompleteTextField extends React.Component {
@@ -99,7 +99,7 @@ class AutocompleteTextField extends React.Component {
       options: [],
       selection: 0,
       top: 0,
-      value: null
+      value: null,
     };
 
     this.recentValue = props.defaultValue;
@@ -108,7 +108,7 @@ class AutocompleteTextField extends React.Component {
   }
 
   componentDidMount() {
-    window.addEventListener("resize", this.handleResize);
+    window.addEventListener('resize', this.handleResize);
   }
 
   componentDidUpdate(prevProps) {
@@ -121,12 +121,14 @@ class AutocompleteTextField extends React.Component {
   }
 
   componentWillUnmount() {
-    window.removeEventListener("resize", this.handleResize);
+    window.removeEventListener('resize', this.handleResize);
   }
 
   getMatch(str, caret, providedOptions) {
     // get trigger, matchAny and regex from props
-    const { trigger, minChars, matchAny, regex } = this.props;
+    const {
+      trigger, minChars, matchAny, regex,
+    } = this.props;
     // instantiate regexp with params passed from props
     const re = new RegExp(regex);
 
@@ -201,7 +203,7 @@ class AutocompleteTextField extends React.Component {
           }
         } else {
           // block to handle trigger with empty string
-          const spaceCharIndex = str.lastIndexOf(" ", caret);
+          const spaceCharIndex = str.lastIndexOf(' ', caret);
           matchStart = spaceCharIndex >= 0 ? spaceCharIndex + 1 : 0;
           if (caret - matchStart <= minChars - 1) {
             // matched slug is empty
@@ -224,7 +226,7 @@ class AutocompleteTextField extends React.Component {
           // matched slug of trigger
           let options = [];
           if (!Array.isArray(triggerOptions)) {
-            const spaceCharIndex = str.lastIndexOf(" ", matchStart);
+            const spaceCharIndex = str.lastIndexOf(' ', matchStart);
             const suggestIndex = spaceCharIndex >= 0 ? spaceCharIndex : 0;
             const variableNameRaw = str.slice(suggestIndex, matchStart);
             const mappedVariableProp = variableNameRaw
@@ -240,7 +242,7 @@ class AutocompleteTextField extends React.Component {
                 currentObj = {};
                 break;
               }
-              k++;
+              k += 1;
             }
 
             options = Object.keys(currentObj).filter((slug) => {
@@ -263,7 +265,7 @@ class AutocompleteTextField extends React.Component {
               trigger: currTrigger,
               matchStart,
               matchLength,
-              options
+              options,
             };
           } else {
             slugData = {
@@ -271,7 +273,7 @@ class AutocompleteTextField extends React.Component {
               trigger: currTrigger,
               matchStart,
               matchLength,
-              options
+              options,
             };
           }
           // exit loop if trigger is an empty string,
@@ -290,7 +292,7 @@ class AutocompleteTextField extends React.Component {
     const triggersMatch = triggers.map((trigger) => ({
       triggerStr: trigger, // string to type to trigger the options
       triggerMatch: trigger.match(re), // regexp to match this trigger
-      triggerLength: trigger.length // number of char of this trigger
+      triggerLength: trigger.length, // number of char of this trigger
     }));
 
     // return array of trigger object
@@ -314,7 +316,9 @@ class AutocompleteTextField extends React.Component {
   }
 
   handleChange(e) {
-    const { onChange, options, spaceRemovers, spacer, value } = this.props;
+    const {
+      onChange, options, spaceRemovers, spacer, value,
+    } = this.props;
 
     // store recent value into variable `old`
     const old = this.recentValue;
@@ -342,10 +346,10 @@ class AutocompleteTextField extends React.Component {
     // if enableSpaceRemovers prop is assigned then
     // '@wonderjenny ,|' -> '@wonderjenny, |'
     if (
-      this.enableSpaceRemovers &&
-      spaceRemovers.length &&
-      str.length > 2 &&
-      spacer.length
+      this.enableSpaceRemovers
+      && spaceRemovers.length
+      && str.length > 2
+      && spacer.length
     ) {
       // loop every char from index 0 until maximum length of previous value and current value
       // of textarea
@@ -355,16 +359,16 @@ class AutocompleteTextField extends React.Component {
           // if current index is greater than or equal 2 and
           // current value
           if (
-            i >= 2 &&
-            str[i - 1] === spacer &&
-            spaceRemovers.indexOf(str[i - 2]) === -1 &&
-            spaceRemovers.indexOf(str[i]) !== -1 &&
-            this.getMatch(str.substring(0, i - 2), caret - 3, options)
+            i >= 2
+            && str[i - 1] === spacer
+            && spaceRemovers.indexOf(str[i - 2]) === -1
+            && spaceRemovers.indexOf(str[i]) !== -1
+            && this.getMatch(str.substring(0, i - 2), caret - 3, options)
           ) {
             // recompose textarea value by removing `spaceRemovers` character
             const newValue = `${str.slice(0, i - 1)}${str.slice(
               i,
-              i + 1
+              i + 1,
             )}${str.slice(i - 1, i)}${str.slice(i + 1)}`;
 
             // update caret position on state and change caret position on textarea
@@ -415,7 +419,7 @@ class AutocompleteTextField extends React.Component {
         case KEY_UP:
           event.preventDefault();
           this.setState({
-            selection: (options.length + selection - 1) % options.length
+            selection: (options.length + selection - 1) % options.length,
           });
           break;
         case KEY_DOWN:
@@ -446,8 +450,12 @@ class AutocompleteTextField extends React.Component {
   }
 
   handleSelection(idx) {
-    const { spacer, onSelect, changeOnSelect, disableSpacerOn } = this.props;
-    const { matchStart, matchLength, options, trigger } = this.state;
+    const {
+      spacer, onSelect, changeOnSelect, disableSpacerOn,
+    } = this.props;
+    const {
+      matchStart, matchLength, options, trigger,
+    } = this.state;
 
     const slug = options[idx];
     const value = this.recentValue;
@@ -457,7 +465,7 @@ class AutocompleteTextField extends React.Component {
     const event = { target: this.refInput.current };
     const changedStr = changeOnSelect(trigger, slug);
 
-    const spacerStr = disableSpacerOn.includes(trigger) ? "" : spacer;
+    const spacerStr = disableSpacerOn.includes(trigger) ? '' : spacer;
     event.target.value = `${part1}${changedStr}${spacerStr}${part2}`;
     this.handleChange(event);
     onSelect(event.target.value);
@@ -470,9 +478,7 @@ class AutocompleteTextField extends React.Component {
   }
 
   updateCaretPosition(caret) {
-    this.setState({ caret }, () =>
-      setCaretPosition(this.refInput.current, caret)
-    );
+    this.setState({ caret }, () => setCaretPosition(this.refInput.current, caret));
   }
 
   updateHelper(str, caret, options) {
@@ -491,27 +497,27 @@ class AutocompleteTextField extends React.Component {
       const top = caretPos.top + input.offsetTop;
       const left = Math.min(
         caretPos.left + input.offsetLeft - OPTION_LIST_Y_OFFSET,
-        input.offsetLeft + rect.width - OPTION_LIST_MIN_WIDTH
+        input.offsetLeft + rect.width - OPTION_LIST_MIN_WIDTH,
       );
 
       const {
         minChars,
         disableMinChars,
         onRequestOptions,
-        requestOnlyIfNoOptions
+        requestOnlyIfNoOptions,
       } = this.props;
       if (
-        (slug.matchLength >= minChars ||
-          disableMinChars.includes(slug.trigger)) &&
-        (slug.options.length > 1 ||
-          (slug.options.length === 1 &&
-            slug.options[0].length !== slug.matchLength))
+        (slug.matchLength >= minChars
+          || disableMinChars.includes(slug.trigger))
+        && (slug.options.length > 1
+          || (slug.options.length === 1
+            && slug.options[0].length !== slug.matchLength))
       ) {
         this.setState({
           helperVisible: true,
           top,
           left,
-          ...slug
+          ...slug,
         });
       } else {
         if (!requestOnlyIfNoOptions || !slug.options.length) {
@@ -539,7 +545,7 @@ class AutocompleteTextField extends React.Component {
       options,
       selection,
       top,
-      value
+      value,
     } = this.state;
 
     if (!helperVisible) {
@@ -547,8 +553,6 @@ class AutocompleteTextField extends React.Component {
     }
 
     const { maxOptions, offsetX, offsetY } = this.props;
-
-    let helperOptions;
 
     if (options.length === 0) {
       return null;
@@ -562,14 +566,14 @@ class AutocompleteTextField extends React.Component {
 
     const optionNumber = maxOptions === 0 ? options.length : maxOptions;
 
-    helperOptions = options.slice(0, optionNumber).map((val, idx) => {
+    const helperOptions = options.slice(0, optionNumber).map((val, idx) => {
       const highlightStart = val
         .toLowerCase()
         .indexOf(value.substr(matchStart, matchLength).toLowerCase());
 
       return (
         <li
-          className={idx === selection ? "active" : null}
+          className={idx === selection ? 'active' : null}
           key={val}
           onClick={() => {
             this.handleSelection(idx);
@@ -579,7 +583,7 @@ class AutocompleteTextField extends React.Component {
           }}
         >
           {val.slice(0, highlightStart)}
-          <strong style={{ color: "red" }}>
+          <strong style={{ color: 'red' }}>
             {val.substr(highlightStart, matchLength)}
           </strong>
           {val.slice(highlightStart + matchLength)}
@@ -593,8 +597,8 @@ class AutocompleteTextField extends React.Component {
         style={{
           left: left + offsetX,
           top: top + offsetY,
-          overflowY: "auto",
-          maxHeight: 200
+          overflowY: 'auto',
+          maxHeight: 200,
         }}
       >
         {helperOptions}
@@ -619,9 +623,9 @@ class AutocompleteTextField extends React.Component {
       delete propagated[k];
     });
 
-    let val = "";
+    let val = '';
 
-    if (typeof value !== "undefined" && value !== null) {
+    if (typeof value !== 'undefined' && value !== null) {
       val = value;
     } else if (stateValue) {
       val = stateValue;

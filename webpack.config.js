@@ -23,7 +23,7 @@ module.exports = {
       }
     }),
     new MiniCssExtractPlugin({ filename: 'bundle.css' }),
-    new ESLintPlugin()
+    new ESLintPlugin({fix: true})
   ],
   module: {
     rules: [
