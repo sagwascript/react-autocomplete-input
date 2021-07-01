@@ -12,7 +12,7 @@ const KEY_ESCAPE = 27;
 const KEY_TAB = 9;
 
 const OPTION_LIST_Y_OFFSET = 10;
-const OPTION_LIST_MIN_WIDTH = 100;
+const OPTION_LIST_MIN_WIDTH = 300;
 
 const propTypes = {
   Component: PropTypes.oneOfType([PropTypes.string, PropTypes.elementType]),
@@ -44,14 +44,20 @@ const propTypes = {
   value: PropTypes.string,
   offsetX: PropTypes.number,
   offsetY: PropTypes.number,
+  containerMaxHeight: PropTypes.number,
+  itemHeight: PropTypes.number,
   passThroughEnter: PropTypes.bool,
+  styles: PropTypes.shape({
+    container: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+    list: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+  }),
 };
 
 const defaultProps = {
   Component: 'textarea',
   defaultValue: '',
   disabled: false,
-  maxOptions: 6,
+  maxOptions: 0,
   onBlur: () => {},
   onChange: () => {},
   onKeyDown: () => {},
@@ -70,8 +76,11 @@ const defaultProps = {
   trigger: '@',
   offsetX: 0,
   offsetY: 0,
+  containerMaxHeight: 200,
+  itemHeight: 27,
   value: null,
   passThroughEnter: false,
+  styles: {},
 };
 
 class AutocompleteTextField extends React.Component {
@@ -89,6 +98,7 @@ class AutocompleteTextField extends React.Component {
     this.updateHelper = this.updateHelper.bind(this);
     this.resetHelper = this.resetHelper.bind(this);
     this.renderAutocompleteList = this.renderAutocompleteList.bind(this);
+    this.handleMoveSelection = this.handleMoveSelection.bind(this);
 
     this.state = {
       helperVisible: false,
@@ -105,6 +115,7 @@ class AutocompleteTextField extends React.Component {
     this.recentValue = props.defaultValue;
     this.enableSpaceRemovers = false;
     this.refInput = createRef();
+    this.refSuggestion = createRef();
   }
 
   componentDidMount() {
@@ -300,7 +311,6 @@ class AutocompleteTextField extends React.Component {
   }
 
   isTrigger(trigger, str, i) {
-    // console.log(`is Trigger, trigger: ${trigger}, str: ${str}, i: ${i}`);
     // if trigger string is not empty or trigger string has length that's not 0
     // then return true
     if (!trigger || !trigger.length) {
@@ -416,16 +426,22 @@ class AutocompleteTextField extends React.Component {
           event.preventDefault();
           this.resetHelper();
           break;
-        case KEY_UP:
+        case KEY_UP: {
           event.preventDefault();
+          const updatedSelection = (options.length + selection - 1) % options.length;
           this.setState({
-            selection: (options.length + selection - 1) % options.length,
+            selection: updatedSelection,
           });
+          this.handleMoveSelection(updatedSelection);
           break;
-        case KEY_DOWN:
+        }
+        case KEY_DOWN: {
+          const updatedSelection = (selection + 1) % options.length;
           event.preventDefault();
-          this.setState({ selection: (selection + 1) % options.length });
+          this.setState({ selection: updatedSelection });
+          this.handleMoveSelection(updatedSelection);
           break;
+        }
         case KEY_ENTER:
         case KEY_RETURN:
           if (!passThroughEnter) {
@@ -475,6 +491,19 @@ class AutocompleteTextField extends React.Component {
     this.updateCaretPosition(part1.length + changedStr.length + 1);
 
     this.enableSpaceRemovers = true;
+  }
+
+  handleMoveSelection(selection) {
+    if (this.refSuggestion.current) {
+      const { containerMaxHeight, itemHeight } = this.props;
+      const suggestionEl = this.refSuggestion.current;
+      const isScrollable = suggestionEl.scrollHeight > suggestionEl.clientHeight;
+      if (isScrollable) {
+        const space = containerMaxHeight - itemHeight;
+        const currentSelectionPos = itemHeight * selection - space;
+        suggestionEl.scrollTo(0, currentSelectionPos);
+      }
+    }
   }
 
   updateCaretPosition(caret) {
@@ -552,7 +581,9 @@ class AutocompleteTextField extends React.Component {
       return null;
     }
 
-    const { maxOptions, offsetX, offsetY } = this.props;
+    const {
+      maxOptions, offsetX, offsetY, containerMaxHeight, itemHeight, styles,
+    } = this.props;
 
     if (options.length === 0) {
       return null;
@@ -565,22 +596,25 @@ class AutocompleteTextField extends React.Component {
     }
 
     const optionNumber = maxOptions === 0 ? options.length : maxOptions;
+    const styling = typeof styles.container === 'object' ? styles.container : {};
 
     const helperOptions = options.slice(0, optionNumber).map((val, idx) => {
       const highlightStart = val
         .toLowerCase()
         .indexOf(value.substr(matchStart, matchLength).toLowerCase());
+      const listClassName = typeof styles.list === 'string' ? styles.list : '';
+      const listStyles = typeof styles.list === 'object' ? styles.list : {};
 
       return (
         <li
-          className={idx === selection ? 'active' : null}
+          className={
+            idx === selection ? `${listClassName} active` : listClassName
+          }
           key={val}
           onClick={() => {
             this.handleSelection(idx);
           }}
-          onMouseEnter={() => {
-            this.setState({ selection: idx });
-          }}
+          style={{ ...listStyles, height: itemHeight }}
         >
           {val.slice(0, highlightStart)}
           <strong style={{ color: 'red' }}>
@@ -593,12 +627,19 @@ class AutocompleteTextField extends React.Component {
 
     return (
       <ul
-        className="react-autocomplete-input"
+        ref={this.refSuggestion}
+        className={
+          typeof styles.container === 'string'
+            ? styles.container
+            : 'react-autocomplete-input'
+        }
         style={{
+          ...styling,
           left: left + offsetX,
           top: top + offsetY,
           overflowY: 'auto',
-          maxHeight: 200,
+          overflowX: 'hidden',
+          maxHeight: containerMaxHeight,
         }}
       >
         {helperOptions}
