@@ -424,6 +424,7 @@ class AutocompleteTextField extends React.Component {
       switch (event.keyCode) {
         case KEY_ESCAPE:
           event.preventDefault();
+          event.stopPropagation();
           this.resetHelper();
           break;
         case KEY_UP: {
