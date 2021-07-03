@@ -1,7 +1,7 @@
 # react-autocomplete-input
 Autocomplete input field for React
 
-[![react-autocomplete-input](https://github.com/sagwascript/react-autocomplete-input/raw/master/docs/demo.gif)](https://github.com/sagwascript/react-autocomplete-input)
+[![react-autocomplete-input](https://raw.githubusercontent.com/sagwascript/react-autocomplete-input/master/docs/demo.gif)](https://github.com/sagwascript/react-autocomplete-input)
 
 # Usage Example
 ```JavaScript
