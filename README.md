@@ -1,15 +1,7 @@
 # react-autocomplete-input
 Autocomplete input field for React
 
-[![react-autocomplete-input](https://github.com/yury-dymov/react-autocomplete-input/raw/master/docs/demo.gif)](https://github.com/yury-dymov/react-autocomplete-input)
-
-[![npm version](https://img.shields.io/npm/v/react-autocomplete-input.svg?style=flat)](https://www.npmjs.com/package/react-autocomplete-input)
-[![Downloads](http://img.shields.io/npm/dm/react-autocomplete-input.svg?style=flat-square)](https://npmjs.org/package/react-autocomplete-input)
-[![Build Status](https://img.shields.io/travis/yury-dymov/react-autocomplete-input/master.svg?style=flat)](https://travis-ci.org/yury-dymov/react-autocomplete-input)
-[![Coverage Status](https://coveralls.io/repos/github/yury-dymov/react-autocomplete-input/badge.svg?branch=master)](https://coveralls.io/github/yury-dymov/react-autocomplete-input?branch=master)
-
-# Demo
-Demo and playground are available [here](https://yury-dymov.github.io/react-autocomplete-input/)
+[![react-autocomplete-input](https://github.com/sagwascript/react-autocomplete-input/raw/master/docs/demo.gif)](https://github.com/sagwascript/react-autocomplete-input)
 
 # Usage Example
 ```JavaScript
@@ -32,6 +24,8 @@ Here for trigger `@` first set of options will resolve and for `@@` — second s
 * Supports both keyboard and mouse for option selection
 * Supports responsiveness and works on every device
 * Supports lazy-loading and dynamic option list updates
+* Improve usability of using empty character as trigger **+**
+* Supports hierarchical suggestion **+**
 * Supports all major browsers including IE 8+
 
 # Configurable Props
@@ -102,9 +96,38 @@ Popup horizontal offset
 #### Default value: 0
 Popup vertical offset
 
-## options : array
+## options : array & object
 #### Default value: `[]`
-List of available options for autocomplete
+List of available options for autocomplete. <br>
+Example:
+```Javascript
+  // provide options for single trigger
+  options={['apple', 'guava', 'durian']}
+  // provide options for every trigger
+  options={{
+    '_': ['apple', 'guava', 'durian'],
+    ':': ['carrot', 'cauliflower', 'spinach']
+  }}
+  // provide hierarchical data, it can go as deep as you want. `null` means that it has no more children and it won't suggest anything once you reach that
+  options={{
+    '/': {
+      sys: {
+        block: null,
+        class: null,
+        devices: null
+      },
+      var: {
+        cache: {
+          fontconfig: null,
+          man: null,
+          pacman: null
+        },
+        db: null,
+        log: null
+      }
+    }
+  }}
+```
 
 ## regex : string
 #### Default value: `^[a-zA-Z0-9_\-]+$`
@@ -122,6 +145,10 @@ By default, after option is selected, it is inserted with following `spacer`. If
 #### Default value: `' '`
 Character which is inserted along with the selected option.
 
+## disableSpacerOn : array
+#### Default value: `[]`
+Disable spacer insertion on certain triggers listed in array.
+
 ## trigger : string
 #### Default value: `'@'`
 Character or string, which triggers showing autocompletion option list. '' and '@@' are both valid triggers. Keep in mind that user have to input at least one extra character to make option list available if empty trigger is used.
@@ -129,6 +156,18 @@ Character or string, which triggers showing autocompletion option list. '' and '
 ## minChars: number
 #### Default value: 0
 Only show autocompletion option list after this many characters have been typed after the trigger character.
+
+## disableMinChars: array
+#### Default value: [] 
+Disable minimum characters restriction on certain triggers listed in array.
+
+## maxContainerHeight: number
+#### Default value: 200 
+Set autosuggestion container maximum height, if options are overflowing then it will display scrollbar on y-axis.
+
+## itemHeight: number
+#### Default value: 27 
+Set each options item's height.
 
 ## value : string
 #### Default value: `''`
@@ -138,6 +177,29 @@ Widget supports both controlling options: by value and by state. If you explicit
 #### Default value: false
 If true, then an enter / return keypress is passed on (after being used to autocomplete).
 Useful if you want to have the form submit as soon as a single value is chosen.
+
+## styles: object
+#### Default value: {}
+Set styling for autosuggestion container and options either using className or inline-style. To style thing using class you can pass string on key `container` to style suggestion container or `list` to style option items, to use inline-style just pass an object.<br>
+Example:
+```Javascript
+  // styling using class
+  styles={{
+    container: 'border border-grey bg-white',
+    list: 'text-center text-sm'
+  }}
+  // styling using inline-style
+  styles={{
+    container: {
+      border: '1px solid grey',
+      background: '#fff'
+    },
+    list: {
+      text-align: 'center',
+      font-size: 10
+    }
+  }}
+```
 
 # Styles Customization
 By default styles are defined in `"react-autocomplete-input/dist/bundle.css"`, however, you may define your custom styles instead for following entities:
