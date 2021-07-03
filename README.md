@@ -195,8 +195,8 @@ Example:
       background: '#fff'
     },
     list: {
-      text-align: 'center',
-      font-size: 10
+      textAlign: 'center',
+      fontSize: 10
     }
   }}
 ```
