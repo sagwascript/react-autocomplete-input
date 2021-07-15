@@ -51,6 +51,7 @@ const propTypes = {
     container: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     list: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   }),
+  hierarchicalStringResolver: PropTypes.func,
 };
 
 const defaultProps = {
@@ -81,6 +82,11 @@ const defaultProps = {
   value: null,
   passThroughEnter: false,
   styles: {},
+  hierarchicalStringResolver: (str, matchStart) => {
+    const spaceCharIndex = str.lastIndexOf(' ', matchStart);
+    const suggestIndex = spaceCharIndex >= 0 ? spaceCharIndex : 0;
+    return str.slice(suggestIndex, matchStart);
+  },
 };
 
 class AutocompleteTextField extends React.Component {
@@ -237,12 +243,14 @@ class AutocompleteTextField extends React.Component {
           // matched slug of trigger
           let options = [];
           if (!Array.isArray(triggerOptions)) {
-            const spaceCharIndex = str.lastIndexOf(' ', matchStart);
-            const suggestIndex = spaceCharIndex >= 0 ? spaceCharIndex : 0;
-            const variableNameRaw = str.slice(suggestIndex, matchStart);
+            const { hierarchicalStringResolver } = this.props;
+            const variableNameRaw = hierarchicalStringResolver(
+              str,
+              matchStart,
+            );
             const mappedVariableProp = variableNameRaw
               .split(triggerStr)
-              .map((v) => v.trim().replaceAll("'", ''))
+              .map((v) => v.trim().replaceAll(/('|")/g, ''))
               .filter((v) => v.length);
             let k = 1;
             let currentObj = triggerOptions[mappedVariableProp[0]];
