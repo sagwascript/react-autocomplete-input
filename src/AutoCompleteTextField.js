@@ -105,6 +105,7 @@ class AutocompleteTextField extends React.Component {
     this.resetHelper = this.resetHelper.bind(this);
     this.renderAutocompleteList = this.renderAutocompleteList.bind(this);
     this.handleMoveSelection = this.handleMoveSelection.bind(this);
+    this.handleTab = this.handleTab.bind(this);
 
     this.state = {
       helperVisible: false,
@@ -244,10 +245,7 @@ class AutocompleteTextField extends React.Component {
           let options = [];
           if (!Array.isArray(triggerOptions)) {
             const { hierarchicalStringResolver } = this.props;
-            const variableNameRaw = hierarchicalStringResolver(
-              str,
-              matchStart,
-            );
+            const variableNameRaw = hierarchicalStringResolver(str, matchStart);
             const mappedVariableProp = variableNameRaw
               .split(triggerStr)
               .map((v) => v.trim().replaceAll(/('|")/g, ''))
@@ -459,12 +457,16 @@ class AutocompleteTextField extends React.Component {
           this.handleSelection(selection);
           break;
         case KEY_TAB:
+          event.preventDefault();
           this.handleSelection(selection);
           break;
         default:
           onKeyDown(event);
           break;
       }
+    } else if (event.keyCode === KEY_TAB) {
+      this.handleTab();
+      event.preventDefault();
     } else {
       onKeyDown(event);
     }
@@ -472,6 +474,17 @@ class AutocompleteTextField extends React.Component {
 
   handleResize() {
     this.setState({ helperVisible: false });
+  }
+
+  handleTab() {
+    const { caret } = this.state;
+    const value = this.recentValue;
+    const part1 = value.substring(0, caret);
+    const part2 = value.substring(caret + 1);
+    const event = { target: this.refInput.current };
+    event.target.value = `${part1}\t${part2}`;
+    this.handleChange(event);
+    this.updateCaretPosition(caret + 1);
   }
 
   handleSelection(idx) {
@@ -595,7 +608,12 @@ class AutocompleteTextField extends React.Component {
     }
 
     const {
-      maxOptions, offsetX, offsetY, containerMaxHeight, itemHeight, styles,
+      maxOptions,
+      offsetX,
+      offsetY,
+      containerMaxHeight,
+      itemHeight,
+      styles,
     } = this.props;
 
     if (options.length === 0) {
