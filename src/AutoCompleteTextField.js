@@ -2,6 +2,7 @@ import React, { createRef } from 'react';
 import PropTypes from 'prop-types';
 import getCaretCoordinates from 'textarea-caret';
 import getInputSelection, { setCaretPosition } from 'get-input-selection';
+import debounce from 'lodash.debounce';
 import './AutoCompleteTextField.css';
 
 const KEY_UP = 38;
@@ -52,6 +53,8 @@ const propTypes = {
     list: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   }),
   hierarchicalStringResolver: PropTypes.func,
+  watchTriggers: PropTypes.arrayOf(PropTypes.string),
+  loading: PropTypes.bool,
 };
 
 const defaultProps = {
@@ -87,6 +90,8 @@ const defaultProps = {
     const suggestIndex = spaceCharIndex >= 0 ? spaceCharIndex : 0;
     return str.slice(suggestIndex, matchStart);
   },
+  watchTriggers: [],
+  loading: false,
 };
 
 class AutocompleteTextField extends React.Component {
@@ -106,6 +111,7 @@ class AutocompleteTextField extends React.Component {
     this.renderAutocompleteList = this.renderAutocompleteList.bind(this);
     this.handleMoveSelection = this.handleMoveSelection.bind(this);
     this.handleTab = this.handleTab.bind(this);
+    this.debouncedOnRequestOptions = debounce(props.onRequestOptions, 500).bind(this);
 
     this.state = {
       helperVisible: false,
@@ -133,7 +139,7 @@ class AutocompleteTextField extends React.Component {
     const { options } = this.props;
     const { caret } = this.state;
 
-    if (options.length !== prevProps.options.length) {
+    if (JSON.stringify(options) !== JSON.stringify(prevProps.options)) {
       this.updateHelper(this.recentValue, caret, options);
     }
   }
@@ -558,9 +564,20 @@ class AutocompleteTextField extends React.Component {
       const {
         minChars,
         disableMinChars,
-        onRequestOptions,
         requestOnlyIfNoOptions,
+        loading,
+        watchTriggers,
       } = this.props;
+
+      if (!requestOnlyIfNoOptions && watchTriggers.includes(slug.trigger) && !loading) {
+        this.setState({
+          helperVisible: true,
+          top,
+          left,
+        });
+        this.debouncedOnRequestOptions(str.substr(slug.matchStart, slug.matchLength));
+      }
+
       if (
         (slug.matchLength >= minChars
           || disableMinChars.includes(slug.trigger))
@@ -574,13 +591,6 @@ class AutocompleteTextField extends React.Component {
           left,
           ...slug,
         });
-      } else {
-        if (!requestOnlyIfNoOptions || !slug.options.length) {
-          // call onRequestOptions callback
-          onRequestOptions(str.substr(slug.matchStart, slug.matchLength));
-        }
-
-        this.resetHelper();
       }
     } else {
       this.resetHelper();
@@ -614,13 +624,14 @@ class AutocompleteTextField extends React.Component {
       containerMaxHeight,
       itemHeight,
       styles,
+      loading,
     } = this.props;
 
-    if (options.length === 0) {
+    if (options.length === 0 && !loading) {
       return null;
     }
 
-    if (selection >= options.length) {
+    if (selection >= options.length && !loading) {
       this.setState({ selection: 0 });
 
       return null;
@@ -628,13 +639,13 @@ class AutocompleteTextField extends React.Component {
 
     const optionNumber = maxOptions === 0 ? options.length : maxOptions;
     const styling = typeof styles.container === 'object' ? styles.container : {};
+    const listClassName = typeof styles.list === 'string' ? styles.list : '';
+    const listStyles = typeof styles.list === 'object' ? styles.list : {};
 
     const helperOptions = options.slice(0, optionNumber).map((val, idx) => {
       const highlightStart = val
         .toLowerCase()
         .indexOf(value.substr(matchStart, matchLength).toLowerCase());
-      const listClassName = typeof styles.list === 'string' ? styles.list : '';
-      const listStyles = typeof styles.list === 'object' ? styles.list : {};
 
       return (
         <li
@@ -655,6 +666,14 @@ class AutocompleteTextField extends React.Component {
         </li>
       );
     });
+    const loadingEl = (
+      <li
+        className={listClassName}
+        style={{ ...listStyles, height: itemHeight }}
+      >
+        Loading...
+      </li>
+    );
 
     return (
       <ul
@@ -673,7 +692,7 @@ class AutocompleteTextField extends React.Component {
           maxHeight: containerMaxHeight,
         }}
       >
-        {helperOptions}
+        {loading ? loadingEl : helperOptions}
       </ul>
     );
   }

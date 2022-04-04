@@ -38,3 +38,5 @@ jspm_packages
 # /dist
 # bundle.js
 .DS_Store
+
+live-test/
