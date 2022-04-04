@@ -512,7 +512,7 @@ class AutocompleteTextField extends React.Component {
     const spacerStr = disableSpacerOn.includes(trigger) ? '' : spacer;
     event.target.value = `${part1}${changedStr}${spacerStr}${part2}`;
     this.handleChange(event);
-    onSelect(event.target.value);
+    onSelect(event.target.value, slug);
 
     this.resetHelper();
 
