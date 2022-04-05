@@ -576,6 +576,7 @@ class AutocompleteTextField extends React.Component {
           left,
         });
         this.debouncedOnRequestOptions(str.substr(slug.matchStart, slug.matchLength));
+        this.resetHelper();
       }
 
       if (
